@@ -1,3 +1,6 @@
+import { BouncyParticle } from "./particles/BouncyParticle.js";
+import { ParticleSystem } from "./ParticleSystem.js";
+
 /**
  * Run p5 in instance mode - this is harder to read than using global mode, but it's required if I
  * want to use imports and spread things over multiple files.
@@ -8,6 +11,8 @@ const s = (p5: p5) => {
 
     let FONT_MONO: p5.Font; // used by the frame rate counter
     let fontLoaded: boolean = false; // whether the mono font has loaded yet
+
+    let particleSystem: ParticleSystem;
 
     /**
      * How many frames to average the frame rate counter over.
@@ -36,8 +41,11 @@ const s = (p5: p5) => {
                 console.log("Failed to load FONT_MONO.")
             }
         );
+
+        particleSystem = new ParticleSystem(p5);
         
-        const canvas = p5.createCanvas(1200, 600);
+        const canvas = p5.createCanvas(750, 750);
+        p5.frameRate(100);
 
         // WHY DO THESE USE CALLBACKS????
         canvas.mouseOver(() => {
@@ -65,7 +73,10 @@ const s = (p5: p5) => {
         }
         const avgFps = fpsBuffer.reduce((p, c) => p + c, 0) / fpsBuffer.length;
 
-        p5.background("#e0e0e0");
+        particleSystem.moveAll();
+
+        p5.background("#131515");
+        particleSystem.renderAll();
 
         // framerate counter - only draw this once the font has loaded
         if (fontLoaded) {
@@ -105,6 +116,8 @@ const s = (p5: p5) => {
 
     function mousePressed() {
         keyStates[p5.mouseButton + " mouse"] = true;
+
+        particleSystem.addParticle(new BouncyParticle(p5.mouseX, p5.mouseY));
     }
     
     function mouseReleased() {

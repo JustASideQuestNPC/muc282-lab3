@@ -1,10 +1,11 @@
 import * as p5 from "p5";
+import Vector2D from "./Vector.js";
 
 /**
  * Enum for different particle tags.
  */
 export enum ParticleTag {
-    
+    BOUNCY_PARTICLE
 }
 
 /**
@@ -44,6 +45,7 @@ export class ParticleSystem {
      * Adds a particle to the system, then returns a reference to it.
      */
     public addParticle<P extends ParticleBase>(particle: P): P {
+        particle.particleSystem = this;
         this.particles.push(particle);
         return particle;
     }
@@ -53,11 +55,14 @@ export class ParticleSystem {
      */
     public moveAll(): void {
         // native delta time is in milliseconds
-        let dt = sketch.deltaTime / 1000 * this.timeScale;
+        let dt = this.sketch.deltaTime / 1000 * this.timeScale;
 
         for (let p of this.particles) {
             p.move(dt);
         }
+
+        // remove deleted particles
+        this.removeIf((p) => p.markForRemove);
     }
 
     /**
@@ -123,6 +128,27 @@ export abstract class ParticleBase {
      * `ParticleSystem.getTagged()` or remove them using `ParticleSystem.removeTagged()`.
      */
     tags: ParticleTag[] = [];
+
+    /**
+     * The particle system the particle is inside. This is automatically set when the particle is
+     * added to a system - don't set it manually unless you know what you're doing.
+     */
+    particleSystem: ParticleSystem;
+
+    /**
+     * If true, the particle will be removed from the system at the end of the current update.
+     */
+    markForRemove: boolean = false;
+
+    /**
+     * The position of the particle.
+     */
+    position: Vector2D = new Vector2D();
+
+    /**
+     * The velocity of the particle.
+     */
+    velocity: Vector2D = new Vector2D();
 
     /**
      * Draws the particle to a canvas or graphics object. This method is automatically called
