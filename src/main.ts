@@ -1,4 +1,3 @@
-import { BouncyParticle } from "./particles/BouncyParticle.js";
 import { ParticleSystem } from "./ParticleSystem.js";
 
 /**
@@ -41,11 +40,13 @@ const s = (p5: p5) => {
                 console.log("Failed to load FONT_MONO.")
             }
         );
+        
+        const canvas = p5.createCanvas(1280, 720);
+        p5.frameRate(100);
+        p5.angleMode("degrees");
 
         particleSystem = new ParticleSystem(p5);
-        
-        const canvas = p5.createCanvas(750, 750);
-        p5.frameRate(100);
+        particleSystem.populate(10);
 
         // WHY DO THESE USE CALLBACKS????
         canvas.mouseOver(() => {
@@ -75,7 +76,7 @@ const s = (p5: p5) => {
 
         particleSystem.moveAll();
 
-        p5.background("#131515");
+        p5.background("#22292f");
         particleSystem.renderAll();
 
         // framerate counter - only draw this once the font has loaded
@@ -117,7 +118,7 @@ const s = (p5: p5) => {
     function mousePressed() {
         keyStates[p5.mouseButton + " mouse"] = true;
 
-        particleSystem.addParticle(new BouncyParticle(p5.mouseX, p5.mouseY));
+        
     }
     
     function mouseReleased() {

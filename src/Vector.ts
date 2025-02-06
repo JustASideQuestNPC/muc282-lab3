@@ -26,9 +26,9 @@ export default class Vector2D {
 
     /**
      * What units to use for angles in `fromPolar` and `heading`. Both methods have parameters that
-     * can override this. The default angle mode is `"radians"`.
+     * can override this. The default angle mode is `Vector2D.AngleUnit.DEGREES`.
      */
-    static angleMode: AngleUnit = Vector2D.AngleUnit.RADIANS;
+    static angleMode: AngleUnit = Vector2D.AngleUnit.DEGREES;
 
     x: number;
     y: number;
@@ -185,8 +185,24 @@ export default class Vector2D {
      * Limits the magnitude (length) of the vector to at or below a maximum value. Returns a
      * reference to the vector for chaining.
      */
-    limit(maximum: number): Vector2D {
+    limit(maximum: number): Vector2D;
+    /**
+     * Limits the magnitude (length) of the vector to between a minimum and maximum value. Returns a
+     * reference to the vector for chaining.
+     */
+    limit(minimum: number, maximum: number): Vector2D;
+
+    limit(minimum: number, maximum?: number): Vector2D {
+        // handle overloads
+        if (maximum === undefined) {
+            maximum = minimum;
+            minimum = 0;
+        }
+
         // use magSq() to avoid an expensive square root operation
+        if (this.magSq() < Math.pow(minimum, 2)) {
+            this.setMag(minimum);
+        }
         if (this.magSq() > Math.pow(maximum, 2)) {
             this.setMag(maximum);
         }

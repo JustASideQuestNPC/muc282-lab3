@@ -2,27 +2,51 @@ import * as p5 from "p5";
 import Vector2D from "./Vector.js";
 
 /**
- * Enum for different particle tags.
- */
-export enum ParticleTag {
-    BOUNCY_PARTICLE
-}
-
-/**
  * Manages an entire particle system.
  */
 export class ParticleSystem {
-    /** All particles currently being updated. */
-    private particles: ParticleBase[] = [];
+    /**
+     * Minimum velocity for particles in pixels per second.
+     */
+    public minVelocity: number = 250;    
+    /**
+     * Maximum velocity for particles in pixels per second.
+     */
+    public maxVelocity: number = 400;
 
+    /**
+     * When particles update, they run calculations based on particles within this distance of them.
+     */
+    public viewRange: number = 200;
+    /**
+     * Particles attempt to remain at least this far away from other particles.
+     */
+    public minDistance: number = 75;
+    /**
+     * How strongly particles attempt to avoid collisions.
+     */
+    public separationFactor: number = 0.5;
+    /**
+     * How strongly particles attempt to remain close to other particles.
+     */
+    public cohesionFactor: number = 0.25;
+    /**
+     * How strongly particles attempt to match their velocity with other particles.
+     */
+    public alignmentFactor: number = 0.5;
+    /**
+     * How strongly particles turn to avoid walls.
+     */
+    public wallAvoidFactor: number = 3000;
+
+    /** All particles currently being updated. */
+    private particles: Particle[] = [];
     /** The sketch instance the particle system is running in. */
     private sketch: p5;
-
     /** The canvas to render particles onto. */
     private canvas: p5.Graphics | p5;
 
-    /** "Speed of time". Must be greater than 0. */
-    public timeScale: number = 1;
+    private _wallMargin: number;
 
     /**
      * @param sketch The sketch instance the particle system is running in.
@@ -34,6 +58,9 @@ export class ParticleSystem {
 
         // default parameters don't work here because the default value is another parameter
         this.canvas = canvas ?? sketch;
+
+        // set the wall margin in the constructor so that the edges also get updated
+        this.wallMargin = 100;
     }
 
     /**
@@ -42,12 +69,28 @@ export class ParticleSystem {
     public numParticles() { return this.particles.length; }
 
     /**
-     * Adds a particle to the system, then returns a reference to it.
+     * Adds a particle to the system.
      */
-    public addParticle<P extends ParticleBase>(particle: P): P {
-        particle.particleSystem = this;
-        this.particles.push(particle);
-        return particle;
+    public addParticle(x: number, y: number, angle: number, speed: number) {
+        const position = new Vector2D(x, y);
+        const velocity = Vector2D.fromPolar(angle, speed);
+        this.particles.push(new Particle(position, velocity, this));
+    }
+
+    /**
+     * Populates the system with some amount of particles.
+     * @param amount How many particles to add.
+     */
+    public populate(amount: number): void {
+        // add a small margin around the edges
+        for (let i = 0; i < amount; ++i) {
+            this.addParticle(
+                Math.random() * this.canvas.width,
+                Math.random() * this.canvas.height,
+                Math.random() * 360,
+                Math.random() * (this.maxVelocity - this.minVelocity) + this.minVelocity
+            );
+        }
     }
 
     /**
@@ -55,21 +98,21 @@ export class ParticleSystem {
      */
     public moveAll(): void {
         // native delta time is in milliseconds
-        let dt = this.sketch.deltaTime / 1000 * this.timeScale;
+        const dt = this.sketch.deltaTime / 1000;
 
         for (let p of this.particles) {
             p.move(dt);
         }
 
         // remove deleted particles
-        this.removeIf((p) => p.markForRemove);
+        this.particles = this.particles.filter((p) => !p.markForRemove);
     }
 
     /**
      * Draws all particles to the canvas.
      */
     public renderAll(): void {
-        for (let p of this.particles) {
+        for (const p of this.particles) {
             p.render(this.canvas);
         }
     }
@@ -82,95 +125,179 @@ export class ParticleSystem {
     }
 
     /**
-     * Removes all particles that a predicate returns true for.
+     * Gets a reference to every particle.
      */
-    public removeIf(predicate: (p: ParticleBase) => boolean): void {
-        // filter removes all items that a predicate returns *false* for
-        this.particles = this.particles.filter((p) => !predicate(p));
-    }
-
-    /**
-     * Removes all particles with a certain tag.
-     */
-    public removeTagged(tag: ParticleTag): void {
-        this.removeIf((p) => p.hasTag(tag));
-    }
-
-    /**
-     * Returns an array containing all particles.
-     */
-    public getAll(): ParticleBase[] {
-        // shallow copy the array to prevent issues if it gets modified later
+    public getAll(): Particle[] {
         return this.particles.slice();
     }
 
     /**
-     * Returns an array containing all particles that a predicate returns true for.
+     * Particles begin turning  away from the screen edges when they are this far from them.
      */
-    public getIf(predicate: (p: ParticleBase) => boolean): ParticleBase[] {
-        return this.particles.filter(predicate);
+    get wallMargin() { return this._wallMargin; }
+    set wallMargin(value) {
+        this._wallMargin = value;
     }
 
     /**
-     * Returns an array containing all particles with a certain tag.
+     * Particles begin turning away from the left edge of the screen when they are this far away
+     * from it.
      */
-    public getTagged(tag: ParticleTag): ParticleBase[] {
-        return this.getIf((p) => p.hasTag(tag));
-    }
+    get leftEdge() { return this._wallMargin; }
+
+    /**
+     * Particles begin turning away from the right edge of the canvas when they are this far away
+     * from it.
+     */
+    get rightEdge() { return this.canvas.width - this._wallMargin; }
+
+    /**
+     * Particles begin turning away from the top edge of the screen when they are this far away
+     * from it.
+     */
+    get topEdge() { return this._wallMargin; }
+
+    /**
+     * Particles begin turning away from the bottom edge of the canvas when they are at least this
+     * far away from it.
+     */
+    get bottomEdge() { return this.canvas.height - this._wallMargin; }
+
+    /**
+     * Height of the canvas the system is rendering to.
+     */
+    get width() { return this.canvas.width; }
+
+    /**
+     * Height of the canvas the system is rendering to.
+     */
+    get height() { return this.canvas.height; }
 }
 
 /**
- * Abstract base class for particles. Cannot be directly instantiated - extend it instead.
+ * A single particle.
  */
-export abstract class ParticleBase {
+class Particle {
     /**
-     * The particle's tags. Tags are mainly used to access particles through
-     * `ParticleSystem.getTagged()` or remove them using `ParticleSystem.removeTagged()`.
+     * The particle system the particle is inside.
      */
-    tags: ParticleTag[] = [];
-
-    /**
-     * The particle system the particle is inside. This is automatically set when the particle is
-     * added to a system - don't set it manually unless you know what you're doing.
-     */
-    particleSystem: ParticleSystem;
-
+    public system: ParticleSystem;
     /**
      * If true, the particle will be removed from the system at the end of the current update.
      */
-    markForRemove: boolean = false;
-
+    public markForRemove: boolean = false;
     /**
      * The position of the particle.
      */
-    position: Vector2D = new Vector2D();
-
+    private position: Vector2D = new Vector2D();
     /**
      * The velocity of the particle.
      */
-    velocity: Vector2D = new Vector2D();
+    private velocity: Vector2D = new Vector2D();
+
+    constructor(position: Vector2D, velocity: Vector2D, system: ParticleSystem) {
+        this.position = position.copy();
+        this.velocity = velocity.copy();
+        this.system = system;
+    }
 
     /**
-     * Draws the particle to a canvas or graphics object. This method is automatically called
-     * whenever the particle system renders - don't call it manually unless you know what you're
-     * doing.
+     * Draws the particle to a canvas or graphics object.
      */
-    render(g: p5.Graphics|p5): void {}
+    render(g: p5.Graphics|p5): void {
+        g.push();
+        g.translate(this.position.x, this.position.y);
+        g.rotate(this.velocity.heading() + 90);
+        g.noStroke();
+        g.fill("#1f84ff")
+        g.beginShape();
+        g.vertex(0, -8);
+        g.vertex(5, 8);
+        g.vertex(-5, 8);
+        g.endShape("close");
+        g.pop();
+    }
 
     /**
      * Updates and moves the particle - normally I'd call this `update()`, but for some reason I'm
-     * required to specifically call it `move()`. This method is automatically called whenever the
-     * particle system updates - don't call it manually unless you know what you're doing.
+     * required to specifically call it `move()`.
      * @param dt The time between last two frames, in seconds. Useful for making particle speed
      *      framerate-independent.
      */
-    move(dt: number): void {}
+    move(dt: number): void {
+        // get a list of all particles and remove any that we shouldn't be interacting with
+        const nearbyParticles = this.system.getAll().filter((p) => (
+            // only interact with particles that aren't ourselves and that are within our view range
+            (p !== this && this.position.distSq(p.position) < Math.pow(this.system.viewRange, 2))
+        ));
 
-    /**
-     * Returns whether the particle has a certain tag. This method is final and should not be
-     * overridden.
-     */
-    hasTag(tag: ParticleTag): boolean {
-        return this.tags.includes(tag);
+        // find how much to turn and accelerate by
+        const separationVector = new Vector2D();
+        const alignmentVector = new Vector2D();
+        const averageNearbyPosition = new Vector2D();
+        for (const particle of nearbyParticles) {
+            // apply separation
+            if (this.position.distSq(particle.position) < Math.pow(this.system.minDistance, 2)) {
+                separationVector.x += this.position.x - particle.position.x;
+                separationVector.y += this.position.y - particle.position.y;
+            }
+
+            // update alignment
+            alignmentVector.add(particle.velocity);
+
+            // update cohesion
+            averageNearbyPosition.add(particle.position);
+        }
+
+        
+        // apply everything to our velocity
+        this.velocity.add(separationVector.mult(this.system.separationFactor * dt));
+        
+        this.velocity.add(
+            alignmentVector.div(nearbyParticles.length)
+                           .mult(this.system.alignmentFactor * dt)
+        );
+
+        this.velocity.add(
+            averageNearbyPosition.div(nearbyParticles.length)
+                                 .sub(this.position)
+                                 .mult(this.system.cohesionFactor * dt)
+        );
+
+        // avoid walls if necessary
+        if (this.position.x < this.system.leftEdge) {
+            this.velocity.x += this.system.wallAvoidFactor * dt;
+        }
+        else if (this.position.x > this.system.rightEdge) {
+            this.velocity.x -= this.system.wallAvoidFactor * dt;
+        }
+        if (this.position.y < this.system.topEdge) {
+            this.velocity.y += this.system.wallAvoidFactor * dt;
+        }
+        else if (this.position.y > this.system.bottomEdge) {
+            this.velocity.y -= this.system.wallAvoidFactor * dt;
+        }
+
+        // apply speed limit and delta time, then move the particle
+        this.velocity.limit(this.system.minVelocity, this.system.maxVelocity);
+        this.position.add(this.velocity.copy().mult(dt));
+
+        // bounce off of walls
+        if (this.position.x < 0) {
+            this.position.x = 0;
+            if (this.velocity.x < 0) { this.velocity.x *= -1; }
+        }
+        else if (this.position.x > this.system.width) {
+            this.position.x = this.system.width;
+            if (this.velocity.x > 0) { this.velocity.x *= -1; }
+        }
+        if (this.position.y < 0) {
+            this.position.y = 0;
+            if (this.velocity.y < 0) { this.velocity.y *= -1; }
+        }
+        else if (this.position.y > this.system.height) {
+            this.position.y = this.system.height;
+            if (this.velocity.y > 0) { this.velocity.y *= -1; }
+        }
     }
 }
