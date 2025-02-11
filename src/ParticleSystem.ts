@@ -25,19 +25,19 @@ export class ParticleSystem {
     /**
      * How strongly particles attempt to avoid collisions.
      */
-    public separationFactor: number = 0.5;
+    public separationFactor: number = 1;
     /**
      * How strongly particles attempt to remain close to other particles.
      */
-    public cohesionFactor: number = 0.25;
+    public cohesionFactor: number = 1;
     /**
      * How strongly particles attempt to match their velocity with other particles.
      */
-    public alignmentFactor: number = 0.5;
+    public alignmentFactor: number = 2;
     /**
      * How strongly particles turn to avoid walls.
      */
-    public wallAvoidFactor: number = 3000;
+    public wallAvoidFactor: number = 1500;
 
     /** All particles currently being updated. */
     private particles: Particle[] = [];
@@ -227,42 +227,48 @@ class Particle {
     move(dt: number): void {
         // get a list of all particles and remove any that we shouldn't be interacting with
         const nearbyParticles = this.system.getAll().filter((p) => (
-            // only interact with particles that aren't ourselves and that are within our view range
-            (p !== this && this.position.distSq(p.position) < Math.pow(this.system.viewRange, 2))
+            // only interact with particles  that are within our view range
+            (this.position.distSq(p.position) < Math.pow(this.system.viewRange, 2))
         ));
 
         // find how much to turn and accelerate by
         const separationVector = new Vector2D();
         const alignmentVector = new Vector2D();
         const averageNearbyPosition = new Vector2D();
+        let numConsidered = 0; // how many particles aren't too close to us
         for (const particle of nearbyParticles) {
             // apply separation
             if (this.position.distSq(particle.position) < Math.pow(this.system.minDistance, 2)) {
                 separationVector.x += this.position.x - particle.position.x;
                 separationVector.y += this.position.y - particle.position.y;
             }
+            else {
+                ++numConsidered;
 
-            // update alignment
-            alignmentVector.add(particle.velocity);
+                // update cohesion
+                averageNearbyPosition.add(particle.position);
 
-            // update cohesion
-            averageNearbyPosition.add(particle.position);
+                // update alignment
+                alignmentVector.add(particle.velocity);
+            }
         }
 
         
         // apply everything to our velocity
         this.velocity.add(separationVector.mult(this.system.separationFactor * dt));
         
-        this.velocity.add(
-            alignmentVector.div(nearbyParticles.length)
-                           .mult(this.system.alignmentFactor * dt)
-        );
+        if (numConsidered > 0) {
+            this.velocity.add(
+                alignmentVector.div(numConsidered)
+                               .mult(this.system.alignmentFactor * dt)
+            );
 
-        this.velocity.add(
-            averageNearbyPosition.div(nearbyParticles.length)
-                                 .sub(this.position)
-                                 .mult(this.system.cohesionFactor * dt)
-        );
+            this.velocity.add(
+                averageNearbyPosition.div(numConsidered)
+                                     .sub(this.position)
+                                     .mult(this.system.cohesionFactor * dt)
+            );
+        }
 
         // avoid walls if necessary
         if (this.position.x < this.system.leftEdge) {
