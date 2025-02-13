@@ -13,6 +13,8 @@ const s = (p5: p5) => {
 
     let particleSystem: ParticleSystem;
 
+    let paused = false;
+
     /**
      * How many frames to average the frame rate counter over.
      */
@@ -27,9 +29,10 @@ const s = (p5: p5) => {
         // i'm supposed to load fonts in p5.preload(), but p5.preload() is terrible - it just kind
         // of pauses the sketch until everything is loaded, and if something can't load it'll just
         // time out forever
+        const rootPath = document.body.getAttribute("data-root");
         FONT_MONO = p5.loadFont(
             // path to the font
-            "../assets/IBMPlexMono-Medium.ttf",
+            `${rootPath}assets/IBMPlexMono-Medium.ttf`,
             // this callback runs if the font loads successfully
             () => {
                 console.log("Successfully loaded FONT_MONO.");
@@ -42,11 +45,12 @@ const s = (p5: p5) => {
         );
         
         const canvas = p5.createCanvas(1280, 720);
+        canvas.parent("sketchContainer");
         p5.frameRate(100);
         p5.angleMode("degrees");
 
         particleSystem = new ParticleSystem(p5);
-        particleSystem.populate(10);
+        particleSystem.populate(20);
 
         // WHY DO THESE USE CALLBACKS????
         canvas.mouseOver(() => {
@@ -98,7 +102,7 @@ const s = (p5: p5) => {
         // of interacting with the sketch
         if (canvasHovered && event.key !== "F12") {
             keyStates[event.key] = true;
-    
+
             // prevents default browser behavior
             return false
         }

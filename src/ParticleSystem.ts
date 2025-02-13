@@ -227,8 +227,8 @@ class Particle {
     move(dt: number): void {
         // get a list of all particles and remove any that we shouldn't be interacting with
         const nearbyParticles = this.system.getAll().filter((p) => (
-            // only interact with particles  that are within our view range
-            (this.position.distSq(p.position) < Math.pow(this.system.viewRange, 2))
+            // only interact with particles other than us that are within our view range
+            p !== this && this.position.distSq(p.position) < Math.pow(this.system.viewRange, 2)
         ));
 
         // find how much to turn and accelerate by
@@ -236,17 +236,18 @@ class Particle {
         const alignmentVector = new Vector2D();
         const averageNearbyPosition = new Vector2D();
         let numConsidered = 0; // how many particles aren't too close to us
+
+        // sum up a bunch of things
         for (const particle of nearbyParticles) {
             // apply separation
             if (this.position.distSq(particle.position) < Math.pow(this.system.minDistance, 2)) {
-                separationVector.x += this.position.x - particle.position.x;
-                separationVector.y += this.position.y - particle.position.y;
+                separationVector.add(this.position.copy().sub(particle.position));
             }
             else {
                 ++numConsidered;
 
-                // update cohesion
-                averageNearbyPosition.add(particle.position);
+                // add the delta 
+                averageNearbyPosition.add(particle.position.copy().sub(this.position));
 
                 // update alignment
                 alignmentVector.add(particle.velocity);
@@ -265,7 +266,6 @@ class Particle {
 
             this.velocity.add(
                 averageNearbyPosition.div(numConsidered)
-                                     .sub(this.position)
                                      .mult(this.system.cohesionFactor * dt)
             );
         }

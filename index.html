@@ -1,5 +1,6 @@
 <html>
   <head>
+    <!-- Grab p5.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"
       integrity="sha512-N4kV7GkNv7QR7RX9YF/olywyIgIwNvfEe2nZtfyj73HdjCUkAfOBDbcuJ/cTaN04JKRnw1YG1wnUyNKMsNgg3g=="
       crossorigin="anonymous"
@@ -10,18 +11,102 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer">
     </script>
-    <script type="module" src="build/main.js"></script>
-    <link rel="shortcut icon" href="https://p5js.org/assets/img/favicon.ico" />
-    <link rel="icon" href="https://p5js.org/assets/img/favicon.ico" />
+
+    <!-- Grab the fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
 
     <style>
-      * {
-        padding: 0px;
-        margin: 0px;
+      /* one dark theme palette */
+      :root {
+        --background: #24233b;
+        --black: #0e0d21;
+        --dark-gray: #3e3e5e;
+        --light-gray: #a6b3cc;
+        --white: #d9e9eb;
+        --red: #ff5458;
+        --light-red: #ff8080;
+        --green: #62d196;
+        --light-green: #95ffa4;
+        --orange: #ffb378;
+        --yellow: #ffe9aa;
+        --blue: #3a70e6;
+        --light-blue: #91ddff;
+        --purple: #906cff;
+        --light-purple: #c991e1;
+        --teal: #3cb6c9;
+        --cyan: #4ff7db;
+        --transparent: #00000000;
       }
-    </style>
-    <script></script>
-  </head>
 
-  <body></body>
+      body {
+        background-color: var(--background);
+        margin: 15px 30px 50px 30px;
+      }
+
+      .canvas-container {
+        margin: 5px 0px;
+      }
+
+      .ui-container {
+        margin-top: 5px;
+        margin-bottom: 5px;
+        flex-direction: column;
+      }
+
+      .ui-item {
+        padding: 10px 15px 10px 10px;
+        border-radius: 10px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        background-color: var(--black);
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        flex: auto;
+      }
+
+      .label {
+        font-family: "Red Hat Display", sans-serif;
+        font-optical-sizing: auto;
+        font-style: normal;
+        font-size: 20px;
+        color: var(--light-blue);
+        font-weight: 500;
+      }
+
+      input[type=range] {
+        margin-left: 0px;
+        margin-right: 15px;
+        accent-color: var(--purple);
+      }
+
+    </style>
+
+    <script src="build/main.js" type="module"></script>
+
+  </head>
+  <body data-root="/">
+    <!-- Main Project Code -->
+    <div class="canvas-container" id="sketchContainer"></div>
+    <div class="ui-container">
+      <div class="ui-item">
+        <input type="range" id="numParticles">
+        <span class="label">Boids</label>
+      </div>
+      <div class="ui-item">
+        <input type="range" id="viewRange">
+        <span class="label">View Range</label>
+      </div>
+      <div class="ui-item">
+        <input type="range" id="minDistance">
+        <span class="label">Protected Distance</label>
+      </div>
+      <div class="ui-item">
+        <input type="range" id="minDistance">
+        <span class="label">Protected Distance</label>
+      </div>
+    </div>
+  </body>
 </html>
