@@ -45,15 +45,22 @@
         margin: 15px 30px 50px 30px;
       }
 
-      .canvas-container {
+      .main-container {
         margin: 5px 0px;
+        flex-direction: row;
+        display: inline-flex;
+      }
+
+      .canvas {
+        margin-right: 10px;
       }
 
       .ui-container {
-        margin-top: 5px;
+        margin-top: 0px;
         margin-bottom: 5px;
         flex-direction: column;
         display: inline-flex;
+        padding: 0px 5px;
       }
 
       .slider-container {
@@ -61,8 +68,7 @@
         display: inline-flex;
         background-color: var(--black);
         border-radius: 10px;
-        padding: 5px 0px;
-        margin: 0px 5px;
+        height: 400px;
       }
 
       .slider-column {
@@ -101,13 +107,14 @@
         font-optical-sizing: auto;
         font-style: normal;
         font-size: 20px;
+        font-variant-numeric: tabular-nums;
         color: var(--cyan);
         font-weight: 500;
         display: inline-flex;
         align-items: center;
         justify-content: flex-end;
         flex: auto;
-        margin-left: 5px;
+        width: 5ch;
       }
 
       .vertical-divider {
@@ -116,36 +123,75 @@
         margin: 5px 5px;
       }
 
+      button {
+        font-family: "Red Hat Display", sans-serif;
+        font-optical-sizing: auto;
+        font-style: normal;
+        font-size: 24px;
+        color: var(--cyan);
+        font-weight: 500;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border-width: 3px;
+        padding: 5px;
+        background: var(--black);
+        border-color: var(--purple);
+        margin-top: 10px;
+        width: 120px;
+      }      
     </style>
 
     <script src="build/main.js" type="module"></script>
 
   </head>
   <body data-root="/">
-    <!-- Main Project Code -->
-    <div class="canvas-container" id="sketchContainer"></div>
-    <div class="ui-container">
-      <div class="slider-container">
-        <div class="slider-column">
-          <div class="ui-slider" id="numParticles">
-            <input type="range">
-            <span class="slider-value">50</span>
+    <div class="main-container">
+      <div class="canvas" id="sketchContainer"></div>
+      <div class="ui-container">
+        <div class="slider-container">
+          <div class="slider-column">
+            <div class="ui-slider" id="numParticles">
+              <input type="range">
+              <span class="slider-value"></span>
+            </div>
+            <div class="ui-slider" id="viewRange">
+              <input type="range">
+              <span class="slider-value"></span>
+            </div>
+            <div class="ui-slider" id="minDistance">
+              <input type="range">
+              <span class="slider-value"></span>
+            </div>
+            <div class="ui-slider" id="separation">
+              <input type="range">
+              <span class="slider-value"></span>
+            </div>
+            <div class="ui-slider" id="cohesion">
+              <input type="range">
+              <span class="slider-value"></span>
+            </div>
+            <div class="ui-slider" id="alignment">
+              <input type="range">
+              <span class="slider-value"></span>
+            </div>
+            <div class="ui-slider" id="wallAvoid">
+              <input type="range">
+              <span class="slider-value"></span>
+            </div>
           </div>
-          <div class="ui-slider" id="viewRange">
-            <input type="range">
-            <span class="slider-value">500</span>
-          </div>
-          <div class="ui-slider" id="minDistance">
-            <input type="range">
-            <span class="slider-value">50</span>
+          <div class="vertical-divider"></div>
+          <div class="slider-column">
+            <span class="label">Boids</span>
+            <span class="label">View Range</span>
+            <span class="label">Protected Distance</span>
+            <span class="label">Separation</span>
+            <span class="label">Cohesion</span>
+            <span class="label">Alignment</span>
+            <span class="label">Wall Avoidance</span>
           </div>
         </div>
-        <div class="vertical-divider"></div>
-        <div class="slider-column">
-          <span class="label">Boids</span>
-          <span class="label">View Range</span>
-          <span class="label">Protected Distance</span>
-        </div>
+        <button id="resetButton">Reset</button>
       </div>
     </div>
   </body>

@@ -1,5 +1,61 @@
 import { ParticleSystem } from "./ParticleSystem.js";
 
+// slider limits
+const MIN_NUM_BOIDS = 1;
+const MAX_NUM_BOIDS = 50;
+const INITIAL_NUM_BOIDS = 25;
+
+const MIN_VIEW_RANGE = 50;
+const MAX_VIEW_RANGE = 1000;
+const INITIAL_VIEW_RANGE = 200;
+
+const MIN_PROTECTED_DISTANCE = 0;
+const MAX_PROTECTED_DISTANCE = 300;
+const INITIAL_PROTECTED_DISTANCE = 75;
+
+const MIN_SEPARATION = 0;
+const MAX_SEPARATION = 20;
+const INITIAL_SEPARATION = 5;
+
+const MIN_COHESION = 0;
+const MAX_COHESION = 20;
+const INITIAL_COHESION = 5;
+
+const MIN_ALIGNMENT = 0;
+const MAX_ALIGNMENT = 20;
+const INITIAL_ALIGNMENT = 5;
+
+const MIN_WALL_AVOID = 0;
+const MAX_WALL_AVOID = 20;
+const INITIAL_WALL_AVOID = 5;
+
+let numParticles = INITIAL_NUM_BOIDS;
+
+/**
+ * Sets up a slider input.
+ * @param name The name of the div containing the slider.
+ * @param min Minimum slider value.
+ * @param max Maximum slider value.
+ * @param initialValue Starting value of the slider
+ * @param onChange Called whenever the slider moves.
+ */
+function setupSlider(name: string, min: number, max: number, initialValue: number,
+                     onInput: (value: number)=>void): void {
+    const container = document.getElementById(name);
+
+    const valueDisplay = container.getElementsByTagName("span")[0];
+    valueDisplay.innerText = initialValue.toString();
+
+    const slider = container.getElementsByTagName("input")[0];
+    slider.min = min.toString();
+    slider.max = max.toString();
+    slider.value = initialValue.toString();
+    slider.oninput = () => {
+        valueDisplay.innerText = slider.value;
+        onInput(Number.parseFloat(slider.value));
+    };
+}
+
 /**
  * Run p5 in instance mode - this is harder to read than using global mode, but it's required if I
  * want to use imports and spread things over multiple files.
@@ -12,8 +68,6 @@ const s = (p5: p5) => {
     let fontLoaded: boolean = false; // whether the mono font has loaded yet
 
     let particleSystem: ParticleSystem;
-
-    let paused = false;
 
     /**
      * How many frames to average the frame rate counter over.
@@ -50,7 +104,53 @@ const s = (p5: p5) => {
         p5.angleMode("degrees");
 
         particleSystem = new ParticleSystem(p5);
-        particleSystem.populate(20);
+
+        // set up buttons
+        const resetButton = document.getElementById("resetButton");
+        resetButton.onclick = () => {
+            particleSystem.removeAll();
+            particleSystem.populate(numParticles);
+        };
+        
+        // set up range sliders
+        setupSlider("numParticles", MIN_NUM_BOIDS, MAX_NUM_BOIDS, INITIAL_NUM_BOIDS, (value) => {
+            numParticles = value;
+            // live update the number of particles
+            while (particleSystem.numParticles() < numParticles) {
+                particleSystem.addParticle();
+            }
+            while (particleSystem.numParticles() > numParticles) {
+                particleSystem.removeParticle();
+            }
+        });
+        setupSlider("viewRange", MIN_VIEW_RANGE, MAX_VIEW_RANGE, INITIAL_VIEW_RANGE, (value) => {
+            particleSystem.viewRange = value;
+        });
+        setupSlider("minDistance", MIN_PROTECTED_DISTANCE, MAX_PROTECTED_DISTANCE,
+                    INITIAL_PROTECTED_DISTANCE, (value) => {
+            particleSystem.minDistance = value;
+        });
+        setupSlider("separation", MIN_SEPARATION, MAX_SEPARATION, INITIAL_SEPARATION, (value) => {
+            particleSystem.separationFactor = value;
+        });
+        setupSlider("cohesion", MIN_COHESION, MAX_COHESION, INITIAL_COHESION, (value) => {
+            particleSystem.cohesionFactor = value;
+        });
+        setupSlider("alignment", MIN_ALIGNMENT, MAX_ALIGNMENT, INITIAL_ALIGNMENT, (value) => {
+            particleSystem.alignmentFactor = value;
+        });
+        setupSlider("wallAvoid", MIN_WALL_AVOID, MAX_WALL_AVOID, INITIAL_WALL_AVOID, (value) => {
+            particleSystem.wallAvoidFactor = value;
+        });
+
+        // final setup
+        particleSystem.viewRange = INITIAL_VIEW_RANGE;
+        particleSystem.minDistance = INITIAL_PROTECTED_DISTANCE;
+        particleSystem.separationFactor = INITIAL_SEPARATION;
+        particleSystem.cohesionFactor = INITIAL_COHESION;
+        particleSystem.alignmentFactor = INITIAL_ALIGNMENT;
+        particleSystem.wallAvoidFactor = INITIAL_WALL_AVOID;
+        particleSystem.populate(numParticles);
 
         // WHY DO THESE USE CALLBACKS????
         canvas.mouseOver(() => {

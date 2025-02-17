@@ -25,19 +25,19 @@ export class ParticleSystem {
     /**
      * How strongly particles attempt to avoid collisions.
      */
-    public separationFactor: number = 1;
+    public separationFactor: number = 5;
     /**
      * How strongly particles attempt to remain close to other particles.
      */
-    public cohesionFactor: number = 1;
+    public cohesionFactor: number = 5;
     /**
      * How strongly particles attempt to match their velocity with other particles.
      */
-    public alignmentFactor: number = 2;
+    public alignmentFactor: number = 5;
     /**
      * How strongly particles turn to avoid walls.
      */
-    public wallAvoidFactor: number = 1500;
+    public wallAvoidFactor: number = 5;
 
     /** All particles currently being updated. */
     private particles: Particle[] = [];
@@ -60,7 +60,7 @@ export class ParticleSystem {
         this.canvas = canvas ?? sketch;
 
         // set the wall margin in the constructor so that the edges also get updated
-        this.wallMargin = 100;
+        this.wallMargin = 150;
     }
 
     /**
@@ -69,9 +69,21 @@ export class ParticleSystem {
     public numParticles() { return this.particles.length; }
 
     /**
+     * Adds a particle to the system with a random position and velocity.
+     */
+    public addParticle(): void;
+    /**
      * Adds a particle to the system.
      */
-    public addParticle(x: number, y: number, angle: number, speed: number) {
+    public addParticle(x: number, y: number, angle: number, speed: number): void;
+
+    public addParticle(x?: number, y?: number, angle?: number, speed?: number): void {
+        // default parameters
+        x = x ?? Math.random() * this.canvas.width;
+        y = y ?? Math.random() * this.canvas.height;
+        angle = angle ?? Math.random() * 360;
+        speed = speed ?? Math.random() * (this.maxVelocity - this.minVelocity) + this.minVelocity;
+
         const position = new Vector2D(x, y);
         const velocity = Vector2D.fromPolar(angle, speed);
         this.particles.push(new Particle(position, velocity, this));
@@ -84,12 +96,7 @@ export class ParticleSystem {
     public populate(amount: number): void {
         // add a small margin around the edges
         for (let i = 0; i < amount; ++i) {
-            this.addParticle(
-                Math.random() * this.canvas.width,
-                Math.random() * this.canvas.height,
-                Math.random() * 360,
-                Math.random() * (this.maxVelocity - this.minVelocity) + this.minVelocity
-            );
+            this.addParticle();
         }
     }
 
@@ -122,6 +129,13 @@ export class ParticleSystem {
      */
     public removeAll(): void {
         this.particles = [];
+    }
+
+    /**
+     * Removes a random particle.
+     */
+    public removeParticle(): void {
+        this.particles.splice(Math.floor(Math.random() * this.particles.length), 1);
     }
 
     /**
@@ -271,17 +285,18 @@ class Particle {
         }
 
         // avoid walls if necessary
+        const wallAvoidFactor = this.system.wallAvoidFactor * 1000; // for config consistency
         if (this.position.x < this.system.leftEdge) {
-            this.velocity.x += this.system.wallAvoidFactor * dt;
+            this.velocity.x += wallAvoidFactor * dt;
         }
         else if (this.position.x > this.system.rightEdge) {
-            this.velocity.x -= this.system.wallAvoidFactor * dt;
+            this.velocity.x -= wallAvoidFactor * dt;
         }
         if (this.position.y < this.system.topEdge) {
-            this.velocity.y += this.system.wallAvoidFactor * dt;
+            this.velocity.y += wallAvoidFactor * dt;
         }
         else if (this.position.y > this.system.bottomEdge) {
-            this.velocity.y -= this.system.wallAvoidFactor * dt;
+            this.velocity.y -= wallAvoidFactor * dt;
         }
 
         // apply speed limit and delta time, then move the particle
