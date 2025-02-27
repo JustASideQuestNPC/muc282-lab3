@@ -29,7 +29,16 @@ const MIN_WALL_AVOID = 0;
 const MAX_WALL_AVOID = 20;
 const INITIAL_WALL_AVOID = 5;
 
+const MIN_SCATTER_CHANCE = 0;
+const MAX_SCATTER_CHANCE = 100;
+const INITIAL_SCATTER_CHANCE = 20;
+
 let numParticles = INITIAL_NUM_BOIDS;
+
+function setupSlider(name: string, min: number, max: number, initialValue: number,
+                     onInput: (value: number)=>void): void;
+function setupSlider(name: string, min: number, max: number, initialValue: number,
+                     valueSuffix: string, onInput: (value: number)=>void): void;
 
 /**
  * Sets up a slider input.
@@ -40,18 +49,25 @@ let numParticles = INITIAL_NUM_BOIDS;
  * @param onChange Called whenever the slider moves.
  */
 function setupSlider(name: string, min: number, max: number, initialValue: number,
-                     onInput: (value: number)=>void): void {
+                     valueSuffix: string |((value: number)=>void),
+                     onInput?: (value: number)=>void): void {
+    // handle overloads
+    if (!onInput && typeof valueSuffix === "function") {
+        onInput = valueSuffix;
+        valueSuffix = "";
+    }
+
     const container = document.getElementById(name);
 
     const valueDisplay = container.getElementsByTagName("span")[0];
-    valueDisplay.innerText = initialValue.toString();
+    valueDisplay.innerText = initialValue.toString() + valueSuffix;
 
     const slider = container.getElementsByTagName("input")[0];
     slider.min = min.toString();
     slider.max = max.toString();
     slider.value = initialValue.toString();
     slider.oninput = () => {
-        valueDisplay.innerText = slider.value;
+        valueDisplay.innerText = slider.value + valueSuffix;
         onInput(Number.parseFloat(slider.value));
     };
 }
@@ -141,6 +157,10 @@ const s = (p5: p5) => {
         });
         setupSlider("wallAvoid", MIN_WALL_AVOID, MAX_WALL_AVOID, INITIAL_WALL_AVOID, (value) => {
             particleSystem.wallAvoidFactor = value;
+        });
+        setupSlider("scatterChance", MIN_SCATTER_CHANCE, MAX_SCATTER_CHANCE, INITIAL_SCATTER_CHANCE,
+                    "%", (value) => {
+            particleSystem.scatterChance = value / 100;
         });
 
         // final setup

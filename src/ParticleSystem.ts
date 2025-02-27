@@ -1,6 +1,10 @@
 import * as p5 from "p5";
 import Vector2D from "./Vector.js";
 
+function randBool(bias: number=0.5) {
+    return Math.random() < bias;
+}
+
 /**
  * Manages an entire particle system.
  */
@@ -38,6 +42,10 @@ export class ParticleSystem {
      * How strongly particles turn to avoid walls.
      */
     public wallAvoidFactor: number = 5;
+    /**
+     * How likely particles are to suddenly scatter.
+     */
+    public scatterChance: number = 0.1;
 
     /** All particles currently being updated. */
     private particles: Particle[] = [];
@@ -47,6 +55,9 @@ export class ParticleSystem {
     private canvas: p5.Graphics | p5;
 
     private _wallMargin: number;
+
+    private intervalTimer: number = 5;
+    private scattering: boolean = false;
 
     /**
      * @param sketch The sketch instance the particle system is running in.
@@ -107,8 +118,15 @@ export class ParticleSystem {
         // native delta time is in milliseconds
         const dt = this.sketch.deltaTime / 1000;
 
+        this.intervalTimer -= dt;
+        if (this.intervalTimer <= 0) {
+            this.intervalTimer = 2;
+            this.scattering = randBool(this.scatterChance);
+            console.log(`[ParticleSystem] scattering: ${this.scattering}`);
+        }
+
         for (let p of this.particles) {
-            p.move(dt);
+            p.move(dt, this.scattering);
         }
 
         // remove deleted particles
@@ -238,7 +256,7 @@ class Particle {
      * @param dt The time between last two frames, in seconds. Useful for making particle speed
      *      framerate-independent.
      */
-    move(dt: number): void {
+    move(dt: number, scattering: boolean): void {
         // get a list of all particles and remove any that we shouldn't be interacting with
         const nearbyParticles = this.system.getAll().filter((p) => (
             // only interact with particles other than us that are within our view range
@@ -278,9 +296,11 @@ class Particle {
                                .mult(this.system.alignmentFactor * dt)
             );
 
+            let cohesion = this.system.cohesionFactor;
+            if (scattering) { cohesion *= -1; }
             this.velocity.add(
                 averageNearbyPosition.div(numConsidered)
-                                     .mult(this.system.cohesionFactor * dt)
+                                     .mult(cohesion * dt)
             );
         }
 

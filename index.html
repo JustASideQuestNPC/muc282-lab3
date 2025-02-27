@@ -146,8 +146,8 @@
 
   </head>
   <body data-root="/">
+    <div class="canvas" id="sketchContainer"></div>
     <div class="main-container">
-      <div class="canvas" id="sketchContainer"></div>
       <div class="ui-container">
         <div class="slider-container">
           <div class="slider-column">
@@ -179,6 +179,10 @@
               <input type="range">
               <span class="slider-value"></span>
             </div>
+            <div class="ui-slider" id="scatterChance">
+              <input type="range">
+              <span class="slider-value"></span>
+            </div>
           </div>
           <div class="vertical-divider"></div>
           <div class="slider-column">
@@ -189,6 +193,7 @@
             <span class="label">Cohesion</span>
             <span class="label">Alignment</span>
             <span class="label">Wall Avoidance</span>
+            <span class="label">Scatter Chance</span>
           </div>
         </div>
         <button id="resetButton">Reset</button>
