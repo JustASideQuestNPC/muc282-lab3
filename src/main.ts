@@ -5,13 +5,13 @@ const MIN_NUM_BOIDS = 1;
 const MAX_NUM_BOIDS = 50;
 const INITIAL_NUM_BOIDS = 25;
 
-const MIN_VIEW_RANGE = 50;
-const MAX_VIEW_RANGE = 1000;
-const INITIAL_VIEW_RANGE = 200;
+const MIN_VIEW_RANGE = 0;
+const MAX_VIEW_RANGE = 400;
+const INITIAL_VIEW_RANGE = 100;
 
 const MIN_PROTECTED_DISTANCE = 0;
-const MAX_PROTECTED_DISTANCE = 300;
-const INITIAL_PROTECTED_DISTANCE = 75;
+const MAX_PROTECTED_DISTANCE = 250;
+const INITIAL_PROTECTED_DISTANCE = 50;
 
 const MIN_SEPARATION = 0;
 const MAX_SEPARATION = 20;
@@ -31,7 +31,7 @@ const INITIAL_WALL_AVOID = 5;
 
 const MIN_SCATTER_CHANCE = 0;
 const MAX_SCATTER_CHANCE = 100;
-const INITIAL_SCATTER_CHANCE = 20;
+const INITIAL_SCATTER_CHANCE = 40;
 
 let numParticles = INITIAL_NUM_BOIDS;
 
@@ -223,6 +223,22 @@ const s = (p5: p5) => {
         if (canvasHovered && event.key !== "F12") {
             keyStates[event.key] = true;
 
+            // toggle velocity vectors
+            if (event.key === "v") {
+                particleSystem.debugFirstParticle = !particleSystem.debugFirstParticle;
+                console.log(
+                    `Particle debug: ${particleSystem.debugFirstParticle ? "On" : "Off"}`
+                );
+            }
+            // toggle slow motion
+            else if (event.key === "t") {
+                particleSystem.timeScale = (particleSystem.timeScale === 1 ? 0.25 : 1);
+                console.log(
+                    `Slow motion: ${particleSystem.timeScale === 1 ? "Disabled" : "Enabled"}`
+                );
+            }
+            
+
             // prevents default browser behavior
             return false
         }
@@ -241,8 +257,6 @@ const s = (p5: p5) => {
 
     function mousePressed() {
         keyStates[p5.mouseButton + " mouse"] = true;
-
-        
     }
     
     function mouseReleased() {

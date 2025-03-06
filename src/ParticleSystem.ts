@@ -12,40 +12,46 @@ export class ParticleSystem {
     /**
      * Minimum velocity for particles in pixels per second.
      */
-    public minVelocity: number = 250;    
+    minVelocity: number = 250;    
     /**
      * Maximum velocity for particles in pixels per second.
      */
-    public maxVelocity: number = 400;
+    maxVelocity: number = 400;
 
     /**
      * When particles update, they run calculations based on particles within this distance of them.
      */
-    public viewRange: number = 200;
+    viewRange: number = 200;
     /**
      * Particles attempt to remain at least this far away from other particles.
      */
-    public minDistance: number = 75;
+    minDistance: number = 75;
     /**
      * How strongly particles attempt to avoid collisions.
      */
-    public separationFactor: number = 5;
+    separationFactor: number = 5;
     /**
      * How strongly particles attempt to remain close to other particles.
      */
-    public cohesionFactor: number = 5;
+    cohesionFactor: number = 5;
     /**
      * How strongly particles attempt to match their velocity with other particles.
      */
-    public alignmentFactor: number = 5;
+    alignmentFactor: number = 5;
     /**
      * How strongly particles turn to avoid walls.
      */
-    public wallAvoidFactor: number = 5;
+    wallAvoidFactor: number = 5;
     /**
      * How likely particles are to suddenly scatter.
      */
-    public scatterChance: number = 0.1;
+    scatterChance: number = 0.1;
+
+    /** Whether to draw debug info for the first particle */
+    debugFirstParticle: boolean = false;
+
+    /** "Speed of time". */
+    timeScale: number = 1;
 
     /** All particles currently being updated. */
     private particles: Particle[] = [];
@@ -56,7 +62,7 @@ export class ParticleSystem {
 
     private _wallMargin: number;
 
-    private intervalTimer: number = 5;
+    private intervalTimer: number = 1.5;
     private scattering: boolean = false;
 
     /**
@@ -77,18 +83,18 @@ export class ParticleSystem {
     /**
      * Returns the number of currently active particles.
      */
-    public numParticles() { return this.particles.length; }
+    numParticles() { return this.particles.length; }
 
     /**
      * Adds a particle to the system with a random position and velocity.
      */
-    public addParticle(): void;
+    addParticle(): void;
     /**
      * Adds a particle to the system.
      */
-    public addParticle(x: number, y: number, angle: number, speed: number): void;
+    addParticle(x: number, y: number, angle: number, speed: number): void;
 
-    public addParticle(x?: number, y?: number, angle?: number, speed?: number): void {
+    addParticle(x?: number, y?: number, angle?: number, speed?: number): void {
         // default parameters
         x = x ?? Math.random() * this.canvas.width;
         y = y ?? Math.random() * this.canvas.height;
@@ -104,7 +110,7 @@ export class ParticleSystem {
      * Populates the system with some amount of particles.
      * @param amount How many particles to add.
      */
-    public populate(amount: number): void {
+    populate(amount: number): void {
         // add a small margin around the edges
         for (let i = 0; i < amount; ++i) {
             this.addParticle();
@@ -114,19 +120,20 @@ export class ParticleSystem {
     /**
      * Moves (updates) all particles.
      */
-    public moveAll(): void {
+    moveAll(): void {
         // native delta time is in milliseconds
-        const dt = this.sketch.deltaTime / 1000;
+        let dt = this.sketch.deltaTime / 1000;
+        dt *= 0.75; // easier than redoing all the math
 
         this.intervalTimer -= dt;
         if (this.intervalTimer <= 0) {
-            this.intervalTimer = 2;
+            this.intervalTimer = 1.5;
             this.scattering = randBool(this.scatterChance);
             console.log(`[ParticleSystem] scattering: ${this.scattering}`);
         }
 
         for (let p of this.particles) {
-            p.move(dt, this.scattering);
+            p.move(dt * this.timeScale, this.scattering);
         }
 
         // remove deleted particles
@@ -136,30 +143,58 @@ export class ParticleSystem {
     /**
      * Draws all particles to the canvas.
      */
-    public renderAll(): void {
+    renderAll(): void {
         for (const p of this.particles) {
             p.render(this.canvas);
+        }
+
+        // draw overlays after drawing particles so they don't get covered up
+        if (this.debugFirstParticle && this.particles.length > 0) {
+            const firstParticle = this.particles[0];
+            const pos = firstParticle.position.copy();
+
+            // get which particles to highlight
+            const nearbyParticles = this.particles.filter((p) => (
+                // only interact with particles other than us that are within our view range
+                p !== firstParticle && pos.distSq(p.position) < Math.pow(this.viewRange, 2)
+            ));
+
+            for (const p of nearbyParticles) {
+                p.render(this.canvas, true);
+            }
+
+            // show distances
+            this.canvas.noFill();
+            this.canvas.strokeWeight(2);
+            this.canvas.stroke("#ff0000");
+            this.canvas.circle(pos.x, pos.y, this.viewRange * 2);
+            this.canvas.circle(pos.x, pos.y, this.minDistance * 2);
+
+            // show velocity vector
+            this.canvas.stroke("#00ff00");
+            const lineEnd = pos.copy().add(firstParticle.velocity.copy().mult(0.05));
+            this.canvas.line(pos.x, pos.y, lineEnd.x, lineEnd.y);
         }
     }
 
     /**
      * Removes all particles.
      */
-    public removeAll(): void {
+    removeAll(): void {
         this.particles = [];
     }
 
     /**
      * Removes a random particle.
      */
-    public removeParticle(): void {
+    removeParticle(): void {
         this.particles.splice(Math.floor(Math.random() * this.particles.length), 1);
     }
 
     /**
      * Gets a reference to every particle.
      */
-    public getAll(): Particle[] {
+    getAll(): Particle[] {
         return this.particles.slice();
     }
 
@@ -213,19 +248,19 @@ class Particle {
     /**
      * The particle system the particle is inside.
      */
-    public system: ParticleSystem;
+    system: ParticleSystem;
     /**
      * If true, the particle will be removed from the system at the end of the current update.
      */
-    public markForRemove: boolean = false;
+    markForRemove: boolean = false;
     /**
      * The position of the particle.
      */
-    private position: Vector2D = new Vector2D();
+    position: Vector2D = new Vector2D();
     /**
      * The velocity of the particle.
      */
-    private velocity: Vector2D = new Vector2D();
+    velocity: Vector2D = new Vector2D();
 
     constructor(position: Vector2D, velocity: Vector2D, system: ParticleSystem) {
         this.position = position.copy();
@@ -236,12 +271,12 @@ class Particle {
     /**
      * Draws the particle to a canvas or graphics object.
      */
-    render(g: p5.Graphics|p5): void {
+    render(g: p5.Graphics|p5, highlight: boolean=false): void {
         g.push();
         g.translate(this.position.x, this.position.y);
         g.rotate(this.velocity.heading() + 90);
         g.noStroke();
-        g.fill("#1f84ff")
+        g.fill(highlight ? "#9ecaff" : "#1f84ff");
         g.beginShape();
         g.vertex(0, -8);
         g.vertex(5, 8);
